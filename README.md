@@ -1,233 +1,250 @@
 # TP 6 – Service Banque en CORBA
 
-**Matière :** Développement d'applications réparties – LSI 3
-**Établissement :** Faculté des Sciences de Sfax – Département d'informatique et des communications
-**Année universitaire :** 2026 – 2027
-**Réalisé par :** Fatma Mhadhbi (individuel)
+**Matière :** Développement d'applications réparties  
+**Niveau :** LSI 3  
+**Établissement :** Faculté des Sciences de Sfax – Département d'informatique et des communications  
+**Année universitaire :** 2026–2027  
+**Réalisé par :** Fatma Mhadhbi
 
 ---
 
-## 🎯 Objectif
+## 🎯 1. Objectif du TP
 
-Développer une application répartie client-serveur en **Java** avec le middleware **CORBA** pour gérer des comptes bancaires. Le serveur expose les opérations suivantes :
+L'objectif de ce TP est de développer une application répartie Client-Serveur en Java en utilisant le middleware **CORBA**.
 
-- créer un compte avec un solde initial ;
-- verser une somme sur un compte (à partir de son code) ;
-- retirer une somme d'un compte (à partir de son code) ;
-- consulter un compte (à partir de son code) ;
-- consulter la liste de tous les comptes ;
-- convertir un montant d'Euro (€) en Dinar Tunisien (DT).
+L'application permet de gérer des comptes bancaires à distance à travers les opérations suivantes :
 
-## 🧰 Environnement
+- Créer un compte avec un solde initial.
+- Effectuer un versement sur un compte.
+- Effectuer un retrait.
+- Consulter un compte par son code.
+- Consulter la liste de tous les comptes.
+- Convertir un montant en Euro vers le Dinar Tunisien.
 
-| Outil | Version |
+---
+
+## 🧰 2. Environnement de travail
+
+| Outil | Version / Technologie |
 |---|---|
+| Langage | Java |
 | JDK | Eclipse Temurin 1.8.0_504 |
 | IDE | IntelliJ IDEA |
-| Build | Maven (`maven.compiler.source/target = 8`) |
-| Terminal | PowerShell |
+| Gestion de projet | Maven |
+| Middleware | CORBA |
+| Interface | IDL |
+| Annuaire | JNDI / tnameserv |
 | Gestion de versions | Git / GitHub |
 
-## 📁 Structure du dépôt
+### 2.1 Configuration du JDK
 
-```
-FatmaMhadhbi_LSI3_DevAppReparties/
-├── TP6_CorbaBanque_Server/
-│   ├── pom.xml
-│   └── src/main/java/
-│       ├── Banque.idl
-│       ├── jndi.properties
-│       ├── corbaBanque/          # code généré par idlj
-│       ├── service/BanqueImpl.java
-│       └── corbaServer/BanqueServer.java
-├── TP6_CorbaBanque_Client/
-│   ├── pom.xml
-│   └── src/main/java/
-│       ├── Banque.idl
-│       ├── jndi.properties
-│       ├── corbaBanque/          # code généré par idlj
-│       └── corbaClient/BanqueClient.java
-└── README.md
-```
+Le JDK 8 a été installé à partir d'IntelliJ IDEA.
 
----
+![Configuration Maven](01_pom_xml.png)
 
-## Étape 1 – Préparation de l'espace de travail et de l'environnement
+![Structure du projet](02_structure_projet.png)
 
-1. Création du répertoire de travail `FatmaMhadhbi_LSI3_DevAppReparties`, ouvert comme workspace dans l'IDE.
-2. Installation du **JDK 8 (Temurin 1.8.0_504)** depuis IntelliJ (*File > Project Structure > SDKs > Download JDK*), puis association au projet avec le *Language level* 8.
-3. Vérification de la présence du JDK dans `C:\Users\User\.jdks` :
+![Liste des SDK](03_jdks_liste.png)
 
-![Liste des JDK installés](screenshots/03_jdks_liste.png)
+![Configuration du SDK](04_jdks_liste_bis.png)
 
-4. Vérification des outils CORBA du JDK 8 :
+### 2.2 Vérification des outils CORBA
 
-**`idlj`** (compilateur IDL → Java, version 3.2) :
+Vérification de la présence du compilateur IDL `idlj` et du service de nommage `tnameserv`.
 
-![idlj version](screenshots/05_idlj_version_chemin_complet.png)
+![Chemin du compilateur IDL](05_idlj_version_chemin_complet.png)
 
-**`tnameserv`** (service de nommage), présent dans le `bin` du JDK :
+![Vérification de tnameserv](06_test_path_tnameserv.png)
 
-![Test-Path tnameserv](screenshots/06_test_path_tnameserv.png)
+### 2.3 Configuration des variables d'environnement
 
-5. Configuration de `JAVA_HOME` et du `PATH` pour la session courante :
+Configuration de `JAVA_HOME` et de `PATH` pour utiliser le JDK 8 depuis le terminal.
 
-```powershell
-$env:JAVA_HOME = "$env:USERPROFILE\.jdks\temurin-1.8.0_504"
-$env:Path = "$env:JAVA_HOME\bin;$env:Path"
-```
+![Configuration JAVA_HOME](07_java_home.png)
 
-![JAVA_HOME et PATH](screenshots/07_java_home.png)
+![Configuration PATH](08_java_home_path.png)
 
-6. Vérification finale : `java -version` et `idlj -version` répondent directement.
+Vérification des versions de Java et de IDL.
 
-![java -version et idlj -version](screenshots/09_java_idlj_version.png)
-
-**Synthèse :** le JDK 8 contient bien les outils CORBA (`idlj`, `tnameserv`), qui ne sont plus fournis à partir du JDK 11. Placer le JDK 8 en tête du `PATH` permet de les utiliser depuis le terminal. Ces variables ne valent que pour le terminal ouvert ; pour les rendre permanentes, il faut les ajouter aux variables d'environnement Windows.
+![Vérification Java et IDL](09_java_idlj_version.png)
 
 ---
 
-## Étape 2 – Développement du serveur
+## 🖥️ 3. Développement du serveur CORBA
 
-### 2.1 Création du projet `TP6_CorbaBanque_Server`
+### 3.1 Création du projet
 
-Projet Maven avec le JDK 8 (source et target à 8) :
+Création du projet Maven `TP6_CorbaBanque_Server` avec JDK 8.
 
-![pom.xml](screenshots/01_pom_xml.png)
+### 3.2 Définition de l'interface IDL
 
-Structure du projet (`src/main/java`, `src/main/resources`, `src/test/java`) :
+Le fichier `Banque.idl` définit le contrat de communication entre le client et le serveur.
 
-![Structure du projet](screenshots/02_structure_projet.png)
+Il contient la structure `Compte`, le type `tabComptes` et l'interface distante `IBanqueRemote`.
 
-### 2.2 Interface IDL `Banque.idl`
+### 3.3 Compilation du fichier IDL
 
-```idl
-module corbaBanque {
-    struct Compte {
-        long  code;
-        float solde;
-    };
+La commande utilisée dans le dossier `src/main/java` :
 
-    typedef sequence<Compte> tabComptes;
-
-    interface IBanqueRemote {
-        void       creerCompte(in Compte cpte);
-        void       verser(in float mt, in long code);
-        void       retirer(in float mt, in long code);
-        Compte     getCompte(in long code);
-        tabComptes getComptes();
-        double     conversion(in float mt);
-    };
-};
-```
-
-### 2.3 Compilation IDL
-
-Depuis `src/main/java` :
-
-```powershell
-cd .\src\main\java\
+```bash
 idlj -fall -v Banque.idl
 ```
 
-![Compilation IDL serveur](screenshots/10_idlj_serveur.png)
+Cette compilation génère automatiquement le package `corbaBanque` contenant les classes nécessaires à la communication CORBA.
 
-Le package `corbaBanque` est généré (stubs, skeletons POA, helpers, holders, interfaces `IBanqueRemoteOperations`, etc.).
+![Compilation IDL du serveur](10_idlj_serveur.png)
 
-### 2.4 Implémentation du servant
+### 3.4 Implémentation du servant
 
-La classe `service.BanqueImpl` hérite de `IBanqueRemotePOA` et implémente toutes les méthodes de `IBanqueRemoteOperations` (logique métier de la banque : création, versement, retrait, consultation, liste, conversion Euro → DT).
+La classe `BanqueImpl` appartient au package `service`.
 
-### 2.5 Configuration JNDI (`jndi.properties`)
+Elle hérite de `IBanqueRemotePOA` et implémente les opérations bancaires définies dans l'interface IDL.
+
+### 3.5 Configuration JNDI
+
+Le fichier `jndi.properties` est placé dans `src/main/resources`.
+
+Il contient les paramètres de connexion à l'annuaire CORBA :
 
 ```properties
 java.naming.factory.initial = com.sun.jndi.cosnaming.CNCtxFactory
 java.naming.provider.url = iiop://localhost:900
 ```
 
-### 2.6 Classe `corbaServer.BanqueServer`
+### 3.6 Démarrage du serveur
 
-Le serveur effectue dans l'ordre :
-
-1. initialisation de l'**ORB** ;
-2. récupération du **RootPOA** et activation du **POAManager** ;
-3. configuration de l'annuaire **JNDI** ;
-4. création du servant `BanqueImpl` ;
-5. enregistrement (`bind`) de la référence dans l'annuaire ;
-6. mise de l'ORB en attente des requêtes clients (`orb.run()`).
-
-**Synthèse :** `idlj` transforme le contrat IDL, indépendant du langage, en code Java prêt à l'emploi. Le servant contient la logique métier. Le serveur publie sa référence d'objet (IOR) dans le service de nommage pour que les clients puissent la retrouver.
+La classe `BanqueServer` initialise l'ORB, active le RootPOA, crée le servant et enregistre sa référence dans l'annuaire sous le nom `banque`.
 
 ---
 
-## Étape 3 – Développement du client
+## 💻 4. Développement du client CORBA
 
-1. Création du projet `TP6_CorbaBanque_Client`.
-2. Copie de `Banque.idl` et `jndi.properties` dans `src/main/java`.
-3. Recompilation de l'IDL côté client :
+Création du projet Maven `TP6_CorbaBanque_Client`.
 
-```powershell
-cd .\src\main\java\
+Le fichier `Banque.idl` est également utilisé côté client afin de générer le package `corbaBanque`.
+
+### 4.1 Compilation IDL côté client
+
+La commande utilisée :
+
+```bash
 idlj -fall -v Banque.idl
 ```
 
-![Compilation IDL client](screenshots/11_idlj_client.png)
+![Compilation IDL du client](11_idlj_client.png)
 
-4. Classe `corbaClient.BanqueClient` :
-   - lecture des propriétés JNDI ;
-   - recherche (`lookup`) de la référence de l'objet distant `banque` ;
-   - conversion avec `IBanqueRemoteHelper.narrow(...)` pour obtenir le **stub** ;
-   - appel et test de chaque méthode distante : `creerCompte`, `verser`, `retirer`, `getCompte`, `getComptes`, `conversion`.
+### 4.2 Implémentation du client
 
-**Synthèse :** le client n'a besoin que du code généré à partir du même fichier IDL. Il manipule l'objet distant comme un objet local grâce au stub, qui masque toute la communication réseau (IIOP).
+La classe `BanqueClient`, dans le package `corbaClient`, permet de :
+
+- Se connecter à l'annuaire JNDI.
+- Rechercher la référence distante `banque` avec `lookup`.
+- Obtenir le stub avec `IBanqueRemoteHelper.narrow()`.
+- Appeler les méthodes distantes du service bancaire.
 
 ---
 
-## Étape 4 – Exécution de l'application
+## ▶️ 5. Exécution de l'application
 
-L'ordre d'initialisation doit être respecté : **annuaire → serveur → client**.
+L'ordre de lancement est le suivant :
 
-### 4.1 Lancement du service de nommage
+1. Démarrer le service de nommage.
+2. Démarrer le serveur CORBA.
+3. Exécuter le client CORBA.
 
-```powershell
+### 5.1 Lancement du service de nommage
+
+Commande utilisée :
+
+```bash
 tnameserv -ORBInitialPort 900
 ```
 
-![tnameserv](screenshots/12_tnameserv.png)
+Le message `Prêt.` confirme le démarrage du service de nommage.
 
-Le message **« Prêt. »** confirme que l'annuaire écoute sur le port 900.
+![Démarrage de tnameserv](12_tnameserv.png)
 
-### 4.2 Lancement du serveur (`BanqueServer`)
+### 5.2 Lancement du serveur
 
-![Serveur démarré](screenshots/13_serveur_demarre.png)
+Le serveur démarre et enregistre l'objet distant `banque` dans l'annuaire.
 
-L'objet `banque` est enregistré dans l'annuaire et le serveur attend les clients.
+![Serveur CORBA démarré](13_serveur_demarre.png)
 
-### 4.3 Lancement du client (`BanqueClient`)
+### 5.3 Lancement du client
 
-![Résultat du client](screenshots/14_client_resultat.png)
+Le client appelle les différentes méthodes distantes du serveur.
 
 Résultats obtenus :
 
 | Opération | Résultat |
 |---|---|
-| Création de compte | `Compte créé.` |
-| Versement | `Versement effectué.` |
-| Retrait | `Retrait effectué.` |
-| Consultation d'un compte | `Compte : 1`, `Solde : 1100.0` |
-| Liste des comptes | `Code : 1 \| Solde : 1100.0` |
-| Conversion | `100 Euros = 335.0 DT` |
+| Création du compte | Compte créé. |
+| Versement de 200 | Versement effectué. |
+| Retrait de 100 | Retrait effectué. |
+| Consultation | Solde = 1100.0 |
+| Liste des comptes | Code : 1, Solde : 1100.0 |
+| Conversion de 100 € | 335.0 DT |
 
-**Synthèse :** toutes les opérations distantes fonctionnent. Le client dialogue avec le serveur via l'ORB, et le taux de conversion utilisé est de 1 € = 3,35 DT. Le programme se termine avec le code de sortie 0, sans erreur.
+![Résultats du client CORBA](14_client_resultat.png)
+
+Toutes les opérations ont été exécutées avec succès. Le programme client s'est terminé avec le code de sortie `0`.
 
 ---
 
-## Étape 5 – Dépôt des livrables
+## 📁 6. Structure du dépôt GitHub
 
-- Projets déposés sur GitHub.
-- Lien du dépôt déposé sur l'espace de dépôt de la plateforme ENT.
-- Ce fichier `README.md` contient les captures d'écran de chaque étape avec une synthèse.
+```text
+TP6_Corba/
+│
+├── TP6_CorbaBanque_Server/
+│   ├── pom.xml
+│   └── src/
+│       └── main/
+│           ├── java/
+│           │   ├── Banque.idl
+│           │   ├── corbaBanque/
+│           │   ├── service/
+│           │   │   └── BanqueImpl.java
+│           │   └── corbaServer/
+│           │       └── BanqueServer.java
+│           └── resources/
+│               └── jndi.properties
+│
+├── TP6_CorbaBanque_Client/
+│   ├── pom.xml
+│   └── src/
+│       └── main/
+│           ├── java/
+│           │   ├── Banque.idl
+│           │   ├── corbaBanque/
+│           │   └── corbaClient/
+│           │       └── BanqueClient.java
+│           └── resources/
+│               └── jndi.properties
+│
+├── 01_pom_xml.png
+├── 02_structure_projet.png
+├── ...
+├── 14_client_resultat.png
+│
+├── .gitignore
+└── README.md
+```
 
-## ✅ Conclusion
+---
 
-Ce TP a permis de mettre en œuvre une application répartie complète avec CORBA : définition du contrat en IDL, génération du code avec `idlj`, implémentation du servant, publication via le service de nommage (JNDI/`tnameserv`), puis invocation distante depuis un client Java à travers un stub.
+## 📤 7. Dépôt GitHub
+
+Les deux projets Client et Serveur ainsi que les captures d'écran sont déposés dans un seul dépôt GitHub :
+
+**GitHub :** [TP6_Corba](https://github.com/FatmaMhdhbi/TP6_Corba)
+
+---
+
+## ✅ 8. Conclusion
+
+Ce TP m'a permis de mettre en pratique la communication entre applications réparties avec CORBA.
+
+J'ai appris à définir une interface avec IDL, générer les classes Java avec `idlj`, développer un serveur CORBA, enregistrer un objet distant dans un annuaire et appeler ses méthodes depuis un client.
+
+Les tests réalisés montrent que les différentes opérations bancaires fonctionnent correctement.
